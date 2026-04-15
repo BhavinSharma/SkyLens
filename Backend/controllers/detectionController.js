@@ -1,4 +1,22 @@
 import Detection from "../models/Detection.js";
+import axios from "axios";
+import FormData from "form-data";
+import fs from "fs";
+
+const FLASK_API_URL = "http://localhost:5000/detect";
+
+function mapCounts(yoloCounts = {}) {
+  const people = yoloCounts.person || 0;
+
+  const vehicles =
+    (yoloCounts.car || 0) +
+    (yoloCounts.bus || 0) +
+    (yoloCounts.truck || 0) +
+    (yoloCounts.motorcycle || 0) +
+    (yoloCounts.bicycle || 0);
+
+  return { people, vehicles };
+}
 
 export const uploadDetection = async (req, res) => {
   try {
@@ -15,22 +33,49 @@ export const uploadDetection = async (req, res) => {
       notes: req.body.notes || "",
       originalName: req.file.originalname,
       imageUrl: `/uploads/${req.file.filename}`,
-      status: "UPLOADED",
+      annotatedUrl: "",
+      status: "PROCESSING",
       total_objects: 0,
       counts: {
         people: 0,
         vehicles: 0,
       },
+      detections: [],
     });
 
+    const form = new FormData();
+    form.append("image", fs.createReadStream(req.file.path));
+
+    const flaskResponse = await axios.post(FLASK_API_URL, form, {
+      headers: form.getHeaders(),
+      maxBodyLength: Infinity,
+    });
+
+    const result = flaskResponse.data;
+    const mappedCounts = mapCounts(result.counts);
+
+    detection.status = "COMPLETED";
+    detection.total_objects = result.total_objects || 0;
+    detection.counts = mappedCounts;
+    detection.detections = result.detections || [];
+    detection.annotatedUrl = result.annotated_image
+      ? `http://localhost:5000${result.annotated_image}`
+      : "";
+
+    await detection.save();
+
     return res.status(201).json({
-      message: "image uploaded successfully",
+      message: "image uploaded and detected successfully",
       success: true,
       detection,
     });
   } catch (error) {
     return res.status(500).json({
-      message: error.message,
+      message:
+        error?.response?.data?.error ||
+        error?.response?.data?.details ||
+        error.message ||
+        "Detection failed",
       success: false,
     });
   }

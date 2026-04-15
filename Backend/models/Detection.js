@@ -25,6 +25,10 @@ const detectionSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    annotatedUrl: {
+      type: String,
+      default: "",
+    },
     status: {
       type: String,
       default: "UPLOADED",
@@ -42,6 +46,15 @@ const detectionSchema = new mongoose.Schema(
         type: Number,
         default: 0,
       },
+    },
+    detections: {
+      type: [
+        {
+          class: String,
+          confidence: Number,
+        },
+      ],
+      default: [],
     },
   },
   { timestamps: true },
