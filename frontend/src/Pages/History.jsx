@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import PageLayout from "../components/layout/PageLayout.jsx";
 import api from "../Services/api.js";
+import { Trash } from "lucide-react";
 
 function History() {
   const [history, setHistory] = useState([]);
@@ -10,6 +11,7 @@ function History() {
   useEffect(() => {
     fetchHistory();
   }, []);
+
 
   const fetchHistory = async () => {
     try {
@@ -34,6 +36,17 @@ function History() {
       </PageLayout>
     );
   }
+ const removeDetectionHandler = async (detectionId) => {
+  try {
+    await api.delete(`/detection/remove/${detectionId}`);
+
+    // update UI instantly
+    setHistory((prev) => prev.filter((item) => item._id !== detectionId));
+
+  } catch (error) {
+    console.log(error);
+  }
+};
 
   if (error) {
     return (
@@ -88,6 +101,12 @@ function History() {
                   <td>
                     <span className="status-chip">{item.status}</span>
                   </td>
+                  <td><button
+  onClick={() => removeDetectionHandler(item._id)}
+  className="delete-btn"
+>
+  <Trash className="h-4 w-4" />
+</button></td>
                 </tr>
               ))}
             </tbody>

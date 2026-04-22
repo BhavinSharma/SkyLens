@@ -10,7 +10,8 @@ import { fileURLToPath } from "url";
 import isAuthenticated from "./middleware/isAuthenticated.js";
 import {
     getDetections,
-    uploadDetection
+    uploadDetection,
+    removeDetections
 } from "./controllers/detectionController.js";
 
 
@@ -53,7 +54,7 @@ app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 app.use("/api/v1/user",userRoute);
 app.post("/api/v1/detection/upload", isAuthenticated, upload.single("image"), uploadDetection);
 app.get("/api/v1/detection/all", isAuthenticated, getDetections);
-
+app.delete("/api/v1/detection/remove/:id", isAuthenticated, removeDetections);
 // server working 
 app.listen(PORT ,()=>{
     //connects to the database 

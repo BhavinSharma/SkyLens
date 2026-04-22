@@ -1,39 +1,101 @@
 import { Link } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
 import PageLayout from "../layout/PageLayout.jsx";
 import useAuth from "../../hooks/useAuth.js";
-
-const chartData = [
-  { people: 30, vehicles: 6 },
-  { people: 45, vehicles: 10 },
-  { people: 22, vehicles: 4 },
-  { people: 60, vehicles: 14 },
-  { people: 42, vehicles: 8 },
-  { people: 38, vehicles: 9 },
-  { people: 55, vehicles: 12 },
-];
-
-const recentDetections = [
-  {
-    id: 1,
-    date: "2026-03-24",
-    location: "Collaroy Beach",
-    people: 42,
-    vehicles: 8,
-  },
-  {
-    id: 2,
-    date: "2026-03-23",
-    location: "Centennial Park",
-    people: 18,
-    vehicles: 3,
-  },
-];
+import api from "../../Services/api.js";
 
 function Dashboard() {
   const { user } = useAuth();
-  const maxPeople = Math.max(...chartData.map((item) => item.people));
-  const totalPeople = chartData.reduce((sum, item) => sum + item.people, 0);
-  const totalVehicles = chartData.reduce((sum, item) => sum + item.vehicles, 0);
+  const [detections, setDetections] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    const fetchDetections = async () => {
+      try {
+        const response = await api.get("/detection/all");
+        setDetections(response.data.detections || []);
+      } catch (err) {
+        setError(err.response?.data?.message || "Failed to fetch dashboard data");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDetections();
+  }, []);
+
+  const totalPeople = detections.reduce(
+    (sum, item) => sum + (item.counts?.people ?? 0),
+    0
+  );
+
+  const totalVehicles = detections.reduce(
+    (sum, item) => sum + (item.counts?.vehicles ?? 0),
+    0
+  );
+
+  const recentDetections = detections.slice(0, 5);
+
+  const chartData = useMemo(() => {
+    const days = [];
+
+    for (let i = 6; i >= 0; i--) {
+      const date = new Date();
+      date.setDate(date.getDate() - i);
+
+      const key = date.toLocaleDateString("en-CA");
+      days.push({
+        date: key,
+        people: 0,
+        vehicles: 0,
+      });
+    }
+
+    detections.forEach((item) => {
+      const itemDate = new Date(item.createdAt).toLocaleDateString("en-CA");
+      const day = days.find((d) => d.date === itemDate);
+
+      if (day) {
+        day.people += item.counts?.people ?? 0;
+        day.vehicles += item.counts?.vehicles ?? 0;
+      }
+    });
+
+    return days;
+  }, [detections]);
+
+  const maxPeople = Math.max(
+    ...chartData.map((item) => Math.max(item.people, item.vehicles)),
+    1
+  );
+
+  if (loading) {
+    return (
+      <PageLayout>
+        <div className="page-header">
+          <div>
+            <h1 className="page-title">Monitoring Overview</h1>
+            <div className="page-meta">Loading dashboard data...</div>
+          </div>
+        </div>
+      </PageLayout>
+    );
+  }
+
+  if (error) {
+    return (
+      <PageLayout>
+        <div className="page-header">
+          <div>
+            <h1 className="page-title">Monitoring Overview</h1>
+            <div className="page-meta">Dashboard connection error</div>
+          </div>
+        </div>
+        <div className="card">Error: {error}</div>
+      </PageLayout>
+    );
+  }
 
   return (
     <PageLayout>
@@ -41,8 +103,7 @@ function Dashboard() {
         <div>
           <h1 className="page-title">Monitoring Overview</h1>
           <div className="page-meta">
-            {user?.company || "SkyLens Operations"} · Last updated: 25 Mar 2026
-            · 11:02 PM AEST
+            {user?.company || "SkyLens Operations"} · Live dashboard
           </div>
         </div>
 
@@ -57,21 +118,21 @@ function Dashboard() {
           <div className="stat-icon blue">P</div>
           <div className="stat-label">People Detected</div>
           <div className="stat-value">{totalPeople}</div>
-          <div className="stat-change">+12% from last week</div>
+          <div className="stat-change">From all uploaded detections</div>
         </div>
 
         <div className="stat-card purple">
           <div className="stat-icon purple">V</div>
           <div className="stat-label">Vehicles Detected</div>
           <div className="stat-value">{totalVehicles}</div>
-          <div className="stat-change">+8% from last week</div>
+          <div className="stat-change">From all uploaded detections</div>
         </div>
 
         <div className="stat-card green">
           <div className="stat-icon green">M</div>
           <div className="stat-label">Mission Status</div>
-          <div className="stat-value">24</div>
-          <div className="stat-change">All active regions healthy</div>
+          <div className="stat-value">{detections.length}</div>
+          <div className="stat-change">Total processed uploads</div>
         </div>
       </div>
 
@@ -143,13 +204,15 @@ function Dashboard() {
           </thead>
           <tbody>
             {recentDetections.map((item) => (
-              <tr key={item.id}>
-                <td className="td-date">{item.date}</td>
-                <td className="td-location">{item.location}</td>
-                <td className="td-num td-people">{item.people}</td>
-                <td className="td-num td-vehicles">{item.vehicles}</td>
+              <tr key={item._id}>
+                <td className="td-date">
+                  {new Date(item.createdAt).toLocaleDateString()}
+                </td>
+                <td className="td-location">{item.missionName || "Untitled"}</td>
+                <td className="td-num td-people">{item.counts?.people ?? 0}</td>
+                <td className="td-num td-vehicles">{item.counts?.vehicles ?? 0}</td>
                 <td>
-                  <span className="status-chip">PROCESSED</span>
+                  <span className="status-chip">{item.status}</span>
                 </td>
               </tr>
             ))}

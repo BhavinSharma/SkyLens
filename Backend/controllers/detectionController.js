@@ -1,5 +1,6 @@
 import Detection from "../models/Detection.js";
 import axios from "axios";
+import { log } from "console";
 import FormData from "form-data";
 import fs from "fs";
 
@@ -98,3 +99,30 @@ export const getDetections = async (req, res) => {
     });
   }
 };
+export const removeDetections = async (req, res) => {
+  try {
+    const detectionId = req.params.id;
+
+    const deletedDetection = await Detection.findByIdAndDelete(detectionId);
+
+    if (!deletedDetection) {
+      return res.status(404).json({
+        message: "Detection not found",
+        success: false,
+      });
+    }
+
+    return res.status(200).json({
+      message: "Detection removed",
+      success: true,
+    });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      message: "Server error",
+      success: false,
+    });
+  }
+};
+
+
