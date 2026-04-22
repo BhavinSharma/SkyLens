@@ -1,0 +1,18 @@
+* [33m2b8a08f[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32myolo-fix[m[33m)[m Implemented detection deletion feature and dynamic dashboard integration with backend data
+* [33m3373cca[m SkyLens: full pipeline working (upload → YOLO → DB → frontend)
+* [33me831cde[m[33m ([m[1;31morigin/main[m[33m)[m Clean up README by removing old guidelines
+* [33me8b7dc3[m[33m ([m[1;32mrestore-clean[m[33m, [m[1;32mmain[m[33m)[m major integration: merge auth, dashboard, upload and refactor frontend structure , connected the auth and database to the frontend layer
+*   [33m52b5f9d[m merge Parth auth branch and resolve conflicts
+[32m|[m[33m\[m  
+[32m|[m * [33m99a8218[m[33m ([m[1;31morigin/Parth--Branch[m[33m)[m initial commit
+* [33m|[m   [33m9ff4b73[m merge jordan-frontend into main and resolve conflicts
+[34m|[m[35m\[m [33m\[m  
+* [35m\[m [33m\[m   [33m18eb6e8[m resolve DashBoard conflict keeping local version
+[36m|[m[1;31m\[m [35m\[m [33m\[m  
+[36m|[m * [35m|[m [33m|[m [33mbf57df9[m Update Upload.jsx
+[36m|[m * [35m|[m [33m|[m [33m1c11248[m Update NotFound.jsx
+[36m|[m * [35m|[m [33m|[m [33m990c0f4[m Update History.jsx
+[36m|[m * [35m|[m [33m|[m [33m58a74f7[m Update DashBoard.jsx
+[36m|[m * [35m|[m [33m|[m [33m0be0185[m Update NotFound.jsx
+[36m|[m * [35m|[m [33m|[m [33m2904682[m Update detect.py
+[36m|[m * [35m|[m [33m|[m [33mad07d89[m Update Upload.jsx
