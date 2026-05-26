@@ -1,19 +1,38 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import PageLayout from "../components/layout/PageLayout.jsx";
 import api from "../Services/api.js";
 
 function Upload() {
   const [selectedFile, setSelectedFile] = useState(null);
+  const [previewUrl, setPreviewUrl] = useState("");
   const [missionName, setMissionName] = useState("");
   const [notes, setNotes] = useState("");
   const [statusMessage, setStatusMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [detectionCounts, setDetectionCounts] = useState(null);
 
   const handleFileChange = (event) => {
     const file = event.target.files?.[0] || null;
+
     setSelectedFile(file);
     setStatusMessage("");
+    setDetectionCounts(null);
+
+    if (file) {
+      const imageUrl = URL.createObjectURL(file);
+      setPreviewUrl(imageUrl);
+    } else {
+      setPreviewUrl("");
+    }
   };
+
+  useEffect(() => {
+    return () => {
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl);
+      }
+    };
+  }, [previewUrl]);
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -24,6 +43,8 @@ function Upload() {
     }
 
     setIsSubmitting(true);
+    setStatusMessage("");
+    setDetectionCounts(null);
 
     try {
       const formData = new FormData();
@@ -32,13 +53,25 @@ function Upload() {
       formData.append("notes", notes);
 
       const response = await api.post("/detection/upload", formData);
+
       setStatusMessage(response.data.message || "Upload completed.");
-      setSelectedFile(null);
+
+      const counts =
+        response.data.counts ||
+        response.data.detection?.counts ||
+        response.data.result?.counts ||
+        null;
+
+      setDetectionCounts({
+        people: counts?.people ?? 0,
+        vehicles: counts?.vehicles ?? counts?.cars ?? 0,
+      });
+
       setMissionName("");
       setNotes("");
     } catch (error) {
       setStatusMessage(
-        error.response?.data?.message || "Upload failed. Check backend auth.",
+        error.response?.data?.message || "Upload failed. Check backend auth."
       );
     } finally {
       setIsSubmitting(false);
@@ -85,8 +118,32 @@ function Upload() {
 
           {selectedFile && (
             <div className="upload-meta">
-              Selected: {selectedFile.name} ({Math.ceil(selectedFile.size / 1024)}{" "}
-              KB)
+              Selected: {selectedFile.name} (
+              {Math.ceil(selectedFile.size / 1024)} KB)
+            </div>
+          )}
+
+          {previewUrl && (
+            <div className="image-preview-box">
+              <img
+                src={previewUrl}
+                alt="Selected mission preview"
+                className="image-preview"
+              />
+            </div>
+          )}
+
+          {detectionCounts && (
+            <div className="detection-summary">
+              <div className="summary-item">
+                <span className="summary-label">People</span>
+                <span className="summary-value">{detectionCounts.people}</span>
+              </div>
+
+              <div className="summary-item">
+                <span className="summary-label">Vehicles</span>
+                <span className="summary-value">{detectionCounts.vehicles}</span>
+              </div>
             </div>
           )}
         </div>

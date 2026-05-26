@@ -1,6 +1,5 @@
 import Detection from "../models/Detection.js";
 import axios from "axios";
-import { log } from "console";
 import FormData from "form-data";
 import fs from "fs";
 
@@ -53,6 +52,7 @@ export const uploadDetection = async (req, res) => {
     });
 
     const result = flaskResponse.data;
+
     const mappedCounts = mapCounts(result.counts);
 
     detection.status = "COMPLETED";
@@ -69,8 +69,13 @@ export const uploadDetection = async (req, res) => {
       message: "image uploaded and detected successfully",
       success: true,
       detection,
+      counts: detection.counts,
+      total_objects: detection.total_objects,
+      annotatedUrl: detection.annotatedUrl,
     });
   } catch (error) {
+    console.log("Upload detection error:", error);
+
     return res.status(500).json({
       message:
         error?.response?.data?.error ||
@@ -93,12 +98,15 @@ export const getDetections = async (req, res) => {
       detections,
     });
   } catch (error) {
+    console.log("Get detections error:", error);
+
     return res.status(500).json({
       message: error.message,
       success: false,
     });
   }
 };
+
 export const removeDetections = async (req, res) => {
   try {
     const detectionId = req.params.id;
@@ -117,12 +125,11 @@ export const removeDetections = async (req, res) => {
       success: true,
     });
   } catch (error) {
-    console.log(error);
+    console.log("Remove detection error:", error);
+
     return res.status(500).json({
       message: "Server error",
       success: false,
     });
   }
 };
-
-
